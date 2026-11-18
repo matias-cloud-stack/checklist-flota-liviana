@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F04-PO-05 Inspección de Vehículos Livianos - PINTEGRALCO</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #c00000;
+      --dark: #1e293b;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --ok: #16a34a;
+      --bad: #dc2626;
+      --warn: #fef08a;
+    }
+    * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+    body { margin: 0; padding: 12px; background: var(--bg); color: #0f172a; font-size: 13px; }
+    .container { max-width: 960px; margin: 0 auto; background: var(--card); border: 1px solid #94a3b8; padding: 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    
+    /* Toolbar superior (no sale al imprimir) */
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; background: #0f172a; color: #fff; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; align-items: center; justify-content: space-between; }
+    .toolbar button { border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+    .btn-cloud { background: #16a34a; color: #fff; }
+    .btn-print { background: #2563eb; color: #fff; }
+    .btn-qr { background: #f59e0b; color: #000; }
+    .btn-clear { background: #64748b; color: #fff; }
+    .status-badge { font-size: 11px; padding: 4px 8px; border-radius: 4px; background: #334155; }
+
+    /* Encabezado oficial F04-PO-05 */
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .header-table td { border: 1px solid #000; padding: 6px 10px; vertical-align: middle; }
+    .brand-title { font-size: 20px; font-weight: 900; letter-spacing: 1px; color: #111; }
+    .brand-sub { font-size: 10px; color: #475569; letter-spacing: 1.5px; }
+    .form-title { font-size: 16px; font-weight: bold; text-align: center; }
+
+    .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+    .meta-item { border: 1px solid #000; padding: 5px 8px; display: flex; flex-direction: column; }
+    .meta-item label { font-size: 10px; font-weight: bold; color: #334155; text-transform: uppercase; }
+    .meta-item input { border: none; border-bottom: 1px dashed #94a3b8; font-size: 13px; font-weight: bold; padding: 2px 0; outline: none; width: 100%; }
+
+    .instructions { background: #f8fafc; border: 1px solid #000; padding: 6px 10px; font-size: 11px; margin-bottom: 10px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+
+    /* Grilla de secciones */
+    .sections-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media screen and (max-width: 720px) {
+      .sections-grid { grid-template-columns: 1fr; }
+      .meta-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .sec-box { border: 1px solid #000; margin-bottom: 10px; break-inside: avoid; }
+    .sec-header { background: #c00000; color: #fff; padding: 5px 8px; font-weight: bold; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .btn-all-ok { background: #ffffff; color: #c00000; border: none; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: bold; cursor: pointer; }
+
+    table.chk-table { width: 100%; border-collapse: collapse; }
+    table.chk-table th, table.chk-table td { border: 1px solid #000; padding: 4px 6px; font-size: 11.5px; }
+    table.chk-table th { background: #e2e8f0; text-align: center; font-size: 10px; }
+    .status-cell { width: 76px; text-align: center; white-space: nowrap; }
+    .vto-cell { width: 105px; text-align: center; }
+    .vto-cell input { width: 100%; font-size: 11px; border: 1px solid #cbd5e1; padding: 2px; }
+    .vto-warn { background-color: var(--warn) !important; }
+
+    .opt-btn { width: 28px; height: 24px; border: 1px solid #64748b; background: #fff; font-weight: bold; cursor: pointer; border-radius: 3px; margin: 0 1px; }
+    .opt-btn.active-ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+    .opt-btn.active-bad { background: var(--bad); color: #fff; border-color: var(--bad); }
+
+    /* Diagrama de daños */
+    .damage-box { border: 1px solid #000; padding: 8px; text-align: center; margin-bottom: 10px; break-inside: avoid; }
+    .damage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-weight: bold; font-size: 12px; }
+    .truck-canvas-wrap { position: relative; display: inline-block; max-width: 100%; border: 1px dashed #94a3b8; cursor: crosshair; touch-action: none; }
+    .truck-svg { width: 100%; max-width: 440px; height: auto; display: block; }
+    .damage-dot { position: absolute; width: 22px; height: 22px; border: 3px solid #dc2626; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; background: rgba(220,38,38,0.15); }
+
+    /* Observaciones y firmas */
+    .obs-box { border: 1px solid #000; padding: 6px 8px; margin-bottom: 10px; }
+    .obs-box textarea { width: 100%; border: none; resize: vertical; min-height: 54px; outline: none; font-size: 12px; }
+
+    .signs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; break-inside: avoid; }
+    .sign-card { border: 1px solid #000; padding: 8px; }
+    .sign-card input { width: 100%; border: none; border-bottom: 1px solid #000; margin-bottom: 6px; padding: 3px; font-weight: bold; }
+    canvas.sig-pad { width: 100%; height: 90px; border: 1px dashed #94a3b8; background: #f8fafc; touch-action: none; cursor: crosshair; display: block; }
+    .sign-actions { display: flex; justify-content: space-between; font-size: 10px; margin-top: 4px; color: #475569; }
+
+    /* Modal QR */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 999; padding: 16px; }
+    .modal { background: #fff; padding: 20px; border-radius: 8px; max-width: 380px; width: 100%; text-align: center; }
+    .modal input { width: 100%; padding: 8px; margin: 6px 0; border: 1px solid #cbd5e1; border-radius: 4px; }
+    #qrcode { display: flex; justify-content: center; margin: 14px 0; }
+
+    /* FORMATO COMPACTO EN 1 SOLA HOJA A4 (Imprimir y Google Drive) */
+    @page { size: A4 portrait; margin: 5mm; }
+    @media print {
+      body { background: #fff; padding: 0; margin: 0; font-size: 7.5px; line-height: 1.05; }
+      .container { border: none; box-shadow: none; padding: 0; margin: 0; max-width: 100%; width: 100%; }
+      .toolbar, .btn-all-ok, .no-print { display: none !important; }
+
+      .header-table { margin-bottom: 3px; }
+      .header-table td { padding: 3px 6px; }
+      .brand-title { font-size: 14px; }
+      .form-title { font-size: 11px; }
+
+      .meta-grid { display: table !important; width: 100% !important; border-collapse: collapse; margin-bottom: 3px; }
+      .meta-item { display: inline-block !important; width: 33.33% !important; padding: 2px 4px; vertical-align: top; }
+      .meta-item label { font-size: 7px; }
+      .meta-item input { font-size: 8.5px; padding: 0; border-bottom: none; }
+
+      .instructions { padding: 2px 4px; font-size: 7px; margin-bottom: 4px; }
+
+      .sections-grid { display: table !important; width: 100% !important; table-layout: fixed; }
+      .sections-grid > div { display: table-cell !important; width: 49% !important; vertical-align: top; }
+      .sections-grid > div:first-child { padding-right: 6px; }
+
+      .sec-box { margin-bottom: 4px; }
+      .sec-header { background: #c00000 !important; color: #fff !important; padding: 2px 5px; font-size: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      table.chk-table th, table.chk-table td { padding: 1px 3px; font-size: 7.2px; line-height: 1.05; }
+      .status-cell { width: 36px; }
+      .vto-cell { width: 58px; }
+      .vto-cell input { font-size: 7px; padding: 0; border: none; }
+
+      .opt-btn { border: none; background: transparent; color: #000 !important; width: auto; height: auto; padding: 0; font-size: 0; }
+      .opt-btn:not(.active-ok):not(.active-bad) { display: none; }
+      .opt-btn.active-ok::after { content: "✓"; font-size: 8.5px; font-weight: bold; }
+      .opt-btn.active-bad::after { content: "X"; font-size: 8.5px; font-weight: bold; color: #c00000; }
+
+      .damage-box { padding: 3px; margin-bottom: 3px; }
+      .truck-svg { max-width: 190px; }
+      .damage-dot { width: 10px; height: 10px; border-width: 1.5px; }
+
+      .obs-box { padding: 3px 5px; margin-bottom: 3px; }
+      .obs-box textarea { min-height: 28px; font-size: 7.5px; }
+
+      .signs-grid { display: table !important; width: 100% !important; table-layout: fixed; }
+      .sign-card { display: table-cell !important; width: 50% !important; padding: 3px 5px; }
+      .sign-card input { font-size: 8px; margin-bottom: 2px; padding: 1px; }
+      canvas.sig-pad, .sign-card img { border: none !important; background: #fff !important; height: 32px !important; }
+      .sign-actions { font-size: 7px; margin-top: 1px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Barra de acciones -->
+  <div class="toolbar no-print">
+    <div>
+      <strong>PINTEGRALCO</strong> <span class="status-badge" id="netStatus">En línea</span>
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button type="button" class="btn-cloud" id="btnGuardarNube" onclick="enviarAGoogleDrive()">☁️ Guardar en Nube</button>
+      <button type="button" class="btn-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+      <button type="button" class="btn-qr" onclick="abrirModalQR()">📱 Generar QR Camioneta</button>
+      <button type="button" class="btn-clear" onclick="limpiarFormulario()">Limpiar</button>
+    </div>
+  </div>
+
+  <!-- Encabezado oficial -->
+  <table class="header-table">
+    <tr>
+      <td style="width: 32%;">
+        <div class="brand-title"><span style="color:#c00000;">P</span>INTEGRALCO</div>
+        <div class="brand-sub">SERVICIOS INTEGRALES</div>
+      </td>
+      <td class="form-title" style="width: 46%;">INSPECCIÓN DE VEHÍCULOS LIVIANOS</td>
+      <td style="width: 22%; font-size: 11px;">
+        <div><strong>Código:</strong> F04-PO-05</div>
+        <div><strong>Revisión:</strong> 03</div>
+        <div><strong>Vigencia:</strong> 05/08/2026</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Datos del vehículo -->
+  <div class="meta-grid">
+    <div class="meta-item"><label>Fecha Inspección</label><input type="date" id="fecha" /></div>
+    <div class="meta-item"><label>N° Interno</label><input type="text" id="interno" placeholder="Ej: 04" /></div>
+    <div class="meta-item"><label>Patente / Dominio</label><input type="text" id="patente" placeholder="Ej: AE123BC" style="text-transform:uppercase;" /></div>
+    <div class="meta-item"><label>Marca / Modelo</label><input type="text" id="modelo" placeholder="Ej: Toyota Hilux 4x4" /></div>
+    <div class="meta-item"><label>KM Actual</label><input type="number" id="kmActual" placeholder="Ej: 85400" /></div>
+    <div class="meta-item"><label>Próximo Service (KM)</label><input type="number" id="proximoService" placeholder="Ej: 90000" /></div>
+  </div>
+
+  <div class="instructions">
+    <span>Marque con <strong>“✓”</strong> si la condición es aceptable y con <strong>“X”</strong> si no lo es.</span>
+    <span>Todos los problemas detectados deben anotarse en <strong>Observaciones</strong> indicando la acción adoptada.</span>
+  </div>
+
+  <!-- Secciones del Checklist -->
+  <div class="sections-grid">
+    <div>
+      <!-- MECÁNICA -->
+      <div class="sec-box" data-section="MECÁNICA">
+        <div class="sec-header">
+          <span>MECÁNICA</span>
+          <button type="button" class="btn-all-ok" onclick="marcarTodoOk(this)">Todo ✓</button>
+        </div>
+        <table class="chk-table">
+          <thead><tr><th>Ítem</th><th>Estado</th></tr></thead>
+          <tbody id="tbody-mecanica"></tbody>
+        </table>
+      </div>
+
+      <!-- LUCES Y SEÑALES -->
+      <div class="sec-box" data-section="LUCES Y SEÑALES">
+        <div class="sec-header">
+          <span>LUCES Y SEÑALES</span>
+          <button type="button" class="btn-all-ok" onclick="marcarTodoOk(this)">Todo ✓</button>
+        </div>
+        <table class="chk-table">
+          <thead><tr><th>Ítem</th><th>Estado</th></tr></thead>
+          <tbody id="tbody-luces"></tbody>
+        </table>
+      </div>
+
+      <!-- VISIÓN Y HABITABILIDAD -->
+      <div class="sec-box" data-section="VISIÓN Y HABITABILIDAD">
+        <div class="sec-header">
+          <span>VISIÓN Y HABITABILIDAD</span>
+          <button type="button" class="btn-all-ok" onclick="marcarTodoOk(this)">Todo ✓</button>
+        </div>
+        <table class="chk-table">
+          <thead><tr><th>Ítem</th><th>Estado</th></tr></thead>
+          <tbody id="tbody-vision"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <!-- DOCUMENTACIÓN -->
+      <div class="sec-box" data-section="DOCUMENTACIÓN">
+        <div class="sec-header">
+          <span>DOCUMENTACIÓN</span>
+          <button type="button" class="btn-all-ok" onclick="marcarTodoOk(this)">Todo ✓</button>
+        </div>
+        <table class="chk-table">
+          <thead><tr><th>Ítem</th><th>Estado</th><th>Vencimiento</th></tr></thead>
+          <tbody id="tbody-documentacion"></tbody>
+        </table>
+      </div>
+
+      <!-- ELEMENTOS DE SEGURIDAD -->
+      <div class="sec-box" data-section="ELEMENTOS DE SEGURIDAD">
+        <div class="sec-header">
+          <span>ELEMENTOS DE SEGURIDAD</span>
+          <button type="button" class="btn-all-ok" onclick="marcarTodoOk(this)">Todo ✓</button>
+        </div>
+        <table class="chk-table">
+          <thead><tr><th>Ítem</th><th>Estado</th><th>Vencimiento</th></tr></thead>
+          <tbody id="tbody-seguridad"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagrama interactivo de golpes -->
+  <div class="damage-box">
+    <div class="damage-header">
+      <span>Toque sobre el esquema para encerrar con un círculo golpes o roturas:</span>
+      <button type="button" class="btn-clear no-print" style="padding:3px 8px; font-size:11px; border:none; border-radius:3px; cursor:pointer;" onclick="limpiarMarcasCamioneta()">Borrar marcas</button>
+    </div>
+    <div class="truck-canvas-wrap" id="truckWrap" onclick="marcarGolpe(event)">
+      <svg class="truck-svg" viewBox="0 0 520 210" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="35" width="480" height="140" rx="26" fill="#f8fafc" stroke="#1e293b" stroke-width="3"/>
+        <path d="M 35 45 Q 115 40 135 50 L 135 160 Q 115 170 35 165 Z" fill="#e2e8f0" stroke="#475569" stroke-width="2"/>
+        <path d="M 138 48 L 178 55 L 178 155 L 138 162 Z" fill="#cbd5e1" stroke="#1e293b" stroke-width="2"/>
+        <rect x="180" y="54" width="130" height="102" rx="6" fill="#f1f5f9" stroke="#1e293b" stroke-width="2"/>
+        <path d="M 312 56 L 328 60 L 328 150 L 312 154 Z" fill="#cbd5e1" stroke="#1e293b" stroke-width="2"/>
+        <rect x="334" y="46" width="152" height="118" rx="4" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+        <line x1="350" y1="62" x2="475" y2="62" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="350" y1="84" x2="475" y2="84" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="350" y1="105" x2="475" y2="105" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="350" y1="126" x2="475" y2="126" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="350" y1="148" x2="475" y2="148" stroke="#94a3b8" stroke-width="2"/>
+        <rect x="336" y="44" width="12" height="122" rx="3" fill="#94a3b8" stroke="#1e293b" stroke-width="1.5"/>
+        <polygon points="150,35 162,16 172,20 162,35" fill="#cbd5e1" stroke="#1e293b" stroke-width="2"/>
+        <polygon points="150,175 162,194 172,190 162,175" fill="#cbd5e1" stroke="#1e293b" stroke-width="2"/>
+        <text x="78" y="108" font-size="11" fill="#64748b" text-anchor="middle" font-weight="bold">FRENTE</text>
+        <text x="410" y="108" font-size="11" fill="#64748b" text-anchor="middle" font-weight="bold">CAJA</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Observaciones -->
+  <div class="obs-box">
+    <strong style="font-size:11px; display:block; margin-bottom:4px;">OBSERVACIONES / ACCIONES ADOPTADAS:</strong>
+    <textarea id="observaciones" placeholder="Detallar aquí cualquier ítem marcado con X, vencimientos próximos o novedades..."></textarea>
+  </div>
+
+  <!-- Firmas -->
+  <div class="signs-grid">
+    <div class="sign-card">
+      <input type="text" id="realizadoPor" placeholder="Realizado por (Nombre y Apellido)" />
+      <canvas id="sig1" class="sig-pad"></canvas>
+      <div class="sign-actions">
+        <span>Firma Conductor / Inspector</span>
+        <a href="#" class="no-print" onclick="limpiarFirma('sig1'); return false;">Borrar firma</a>
+      </div>
+    </div>
+    <div class="sign-card">
+      <input type="text" id="revisadoPor" placeholder="Revisado por (Seguridad e Higiene / Supervisor)" />
+      <canvas id="sig2" class="sig-pad"></canvas>
+      <div class="sign-actions">
+        <span>Firma Responsable SyH</span>
+        <a href="#" class="no-print" onclick="limpiarFirma('sig2'); return false;">Borrar firma</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Generador QR -->
+<div class="modal-backdrop" id="qrModal">
+  <div class="modal">
+    <h3 style="margin-top:0;">Generar QR para Camioneta</h3>
+    <p style="font-size:12px; color:#475569;">Al escanear este QR, el checklist abrirá con los datos del vehículo precargados.</p>
+    <input type="text" id="qrInterno" placeholder="N° Interno (ej: 04)" />
+    <input type="text" id="qrPatente" placeholder="Patente (ej: AE123BC)" style="text-transform:uppercase;" />
+    <input type="text" id="qrModelo" placeholder="Marca / Modelo (ej: Hilux 4x4)" />
+    <button type="button" class="btn-cloud" style="width:100%; padding:10px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; margin-top:6px;" onclick="generarQR()">Crear Código QR</button>
+    <div id="qrcode"></div>
+    <div id="qrUrlText" style="font-size:10px; word-break:break-all; color:#475569; margin-bottom:10px;"></div>
+    <button type="button" class="btn-clear" style="padding:8px 16px; border:none; border-radius:4px; cursor:pointer;" onclick="cerrarModalQR()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrLyzEWIr3g0l-omB2L5Yz_50wZLLtQFhmcS8ayFVu6GIx70IjjcL3JJz7ziQH3qPy/exec";
+
+  const ITEMS = {
+    mecanica: [
+      "NIVEL DE ACEITE", "NIVEL DE REFRIGERANTE/AGUA", "NIVEL DE LÍQUIDO DE FRENOS",
+      "CAJA DE CAMBIOS", "CAJA DE DIRECCIÓN", "DIFERENCIAL", "RADIADOR",
+      "TREN DELANTERO Y TRASERO", "AMORTIGUADORES", "PAQUETE DE ELÁSTICOS",
+      "ESTADO DE NEUMÁTICOS (DESGASTE)", "CAÑO DE ESCAPE Y SILENCIADOR",
+      "ESTADO DE FRENOS", "ESTADO DE CHAPA Y PINTURA"
+    ],
+    documentacion: [
+      { name: "CÉDULA AUTOMOTOR", vto: true },
+      { name: "CONSTANCIA SEGURO", vto: true },
+      { name: "RECIBO PATENTE", vto: true },
+      { name: "HABILITACIÓN CENT/VTV/RTO", vto: true },
+      { name: "GRABADO DE CRISTALES", vto: false },
+      { name: "N° INTERNO DE VEHÍCULO Y LOGO", vto: false }
+    ],
+    seguridad: [
+      { name: "MATAFUEGO EXTERIOR", vto: true },
+      { name: "MATAFUEGO INTERIOR", vto: true },
+      { name: "BALIZAS REFLECTIVAS", vto: false },
+      { name: "LINTERNA", vto: false },
+      { name: "CHECK POINT", vto: false },
+      { name: "CHALECO REFLECTIVO", vto: false },
+      { name: "FRENO DE MANO", vto: false },
+      { name: "CRIQUET, LLAVE DE RUEDA, ETC.", vto: false },
+      { name: "ARRESTALLAMA", vto: false },
+      { name: "APOYACABEZAS", vto: false },
+      { name: "BARRA DE REMOLQUE", vto: false },
+      { name: "JAULA ANTIVUELCO", vto: false },
+      { name: "BOCINA", vto: false },
+      { name: "ALARMA DE RETROCESO", vto: false },
+      { name: "RED CAJA DE CARGA", vto: false },
+      { name: "MANTAS TÉRMICAS (2)", vto: false },
+      { name: "SISTEMA DE RASTREO SATELITAL", vto: false },
+      { name: "VELAS DE PARAFINA (2)", vto: false },
+      { name: "CADENAS PARA NIEVE", vto: false },
+      { name: "PINZA DE ARRANQUE", vto: false },
+      { name: "RUEDA DE AUXILIO", vto: false },
+      { name: "BOTIQUÍN PRIMEROS AUXILIOS", vto: true }
+    ],
+    luces: [
+      "LUCES DE POSICIÓN", "LUCES BAJAS", "LUCES ALTAS", "LUCES DE GIRO",
+      "LUCES DE BALIZA INTERMITENTE", "LUCES DE FRENO", "LUZ DE PATENTE",
+      "LUCES DE MARCHA ATRÁS", "CÍRCULO DE VELOCIDAD MÁXIMA",
+      "BANDAS REFLECTIVAS", "LUCES DE TABLERO E INTERIOR"
+    ],
+    vision: [
+      "ESPEJOS LATERALES Y CENTRAL", "PARABRISAS", "LUNETA",
+      "CALEFACCIÓN / AIRE ACONDICIONADO", "PARASOLES", "ASIENTOS",
+      "ALFOMBRAS", "ALVA / LIMPIAPARABRISAS"
+    ]
+  };
+
+  function renderTabla(tbodyId, lista, conVto) {
+    const tbody = document.getElementById(tbodyId);
+    lista.forEach(item => {
+      const label = typeof item === "string" ? item : item.name;
+      const tieneVto = typeof item === "object" && item.vto;
+      const tr = document.createElement("tr");
+      tr.dataset.itemName = label;
+      tr.innerHTML = `
+        <td>${label}</td>
+        <td class="status-cell">
+          <button type="button" class="opt-btn" onclick="setEstado(this, 'OK')">✓</button>
+          <button type="button" class="opt-btn" onclick="setEstado(this, 'BAD')">X</button>
+        </td>
+        ${conVto ? `<td class="vto-cell">${tieneVto ? '<input type="date" onchange="verificarVto(this)" />' : '-'}</td>` : ''}
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function setEstado(btn, tipo) {
+    const cell = btn.parentElement;
+    const btns = cell.querySelectorAll(".opt-btn");
+    btns.forEach(b => b.classList.remove("active-ok", "active-bad"));
+    btn.classList.add(tipo === "OK" ? "active-ok" : "active-bad");
+  }
+
+  function marcarTodoOk(headerBtn) {
+    const box = headerBtn.closest(".sec-box");
+    box.querySelectorAll("tbody tr").forEach(tr => {
+      const btns = tr.querySelectorAll(".opt-btn");
+      btns[0].classList.add("active-ok");
+      btns[1].classList.remove("active-bad");
+    });
+  }
+
+  function verificarVto(input) {
+    if (!input.value) { input.classList.remove("vto-warn"); return; }
+    const hoy = new Date();
+    const vto = new Date(input.value + "T00:00:00");
+    const diffDias = (vto - hoy) / (1000 * 60 * 60 * 24);
+    if (diffDias <= 30) input.classList.add("vto-warn");
+    else input.classList.remove("vto-warn");
+  }
+
+  function marcarGolpe(e) {
+    const wrap = document.getElementById("truckWrap");
+    const rect = wrap.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const dot = document.createElement("div");
+    dot.className = "damage-dot";
+    dot.style.left = x + "%";
+    dot.style.top = y + "%";
+    wrap.appendChild(dot);
+  }
+
+  function limpiarMarcasCamioneta() {
+    document.querySelectorAll(".damage-dot").forEach(d => d.remove());
+  }
+
+  function initSignaturePad(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+
+    function resize() {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#0f172a";
+    }
+    resize();
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    canvas.addEventListener("mousedown", e => { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+    canvas.addEventListener("mousemove", e => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+    window.addEventListener("mouseup", () => { drawing = false; });
+
+    canvas.addEventListener("touchstart", e => { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
+    canvas.addEventListener("touchmove", e => { e.preventDefault(); if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, { passive: false });
+    canvas.addEventListener("touchend", () => { drawing = false; });
+  }
+
+  function limpiarFirma(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function prepararSnapshotHTML() {
+    document.querySelectorAll("input").forEach(inp => inp.setAttribute("value", inp.value));
+    document.querySelectorAll("textarea").forEach(ta => ta.textContent = ta.value);
+
+    const clone = document.documentElement.cloneNode(true);
+    ["sig1", "sig2"].forEach(id => {
+      const origCanvas = document.getElementById(id);
+      const cloneCanvas = clone.querySelector("#" + id);
+      if (origCanvas && cloneCanvas) {
+        const img = document.createElement("img");
+        img.src = origCanvas.toDataURL("image/png");
+        img.style.width = "100%";
+        img.style.height = "34px";
+        img.style.objectFit = "contain";
+        cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
+      }
+    });
+    clone.querySelectorAll(".no-print").forEach(el => el.remove());
+    return "<!DOCTYPE html>\n" + clone.outerHTML;
+  }
+
+  async function enviarAGoogleDrive() {
+    const btn = document.getElementById("btnGuardarNube");
+    const fallas = [];
+    document.querySelectorAll("tbody tr").forEach(tr => {
+      if (tr.querySelector(".active-bad")) {
+        fallas.push(tr.dataset.itemName);
+      }
+    });
+
+    const payload = {
+      fecha: document.getElementById("fecha").value,
+      interno: document.getElementById("interno").value.trim(),
+      patente: document.getElementById("patente").value.trim().toUpperCase(),
+      modelo: document.getElementById("modelo").value.trim(),
+      kmActual: document.getElementById("kmActual").value,
+      proximoService: document.getElementById("proximoService").value,
+      fallasCount: fallas.length,
+      fallasDetalle: fallas.length ? fallas.join(", ") : "Ninguna",
+      observaciones: document.getElementById("observaciones").value.trim(),
+      realizadoPor: document.getElementById("realizadoPor").value.trim(),
+      revisadoPor: document.getElementById("revisadoPor").value.trim(),
+      htmlSnapshot: prepararSnapshotHTML()
+    };
+
+    if (!payload.patente && !payload.interno) {
+      alert("Por favor ingresa al menos el N° Interno o la Patente antes de guardar.");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "⏳ Enviando...";
+
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      alert("✅ Checklist enviado correctamente a Google Sheets y guardado en Drive.");
+    } catch (err) {
+      const pendientes = JSON.parse(localStorage.getItem("checklists_pendientes") || "[]");
+      pendientes.push(payload);
+      localStorage.setItem("checklists_pendientes", JSON.stringify(pendientes));
+      alert("⚠️ Sin conexión a internet: el checklist quedó guardado en el teléfono y se enviará al recuperar señal.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "☁️ Guardar en Nube";
+    }
+  }
+
+  async function sincronizarPendientes() {
+    const pendientes = JSON.parse(localStorage.getItem("checklists_pendientes") || "[]");
+    if (!pendientes.length || !navigator.onLine) return;
+    const restantes = [];
+    for (const item of pendientes) {
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(item)
+        });
+      } catch (e) {
+        restantes.push(item);
+      }
+    }
+    localStorage.setItem("checklists_pendientes", JSON.stringify(restantes));
+    if (restantes.length === 0) {
+      alert("📶 Se sincronizaron automáticamente los checklists que estaban pendientes sin señal.");
+    }
+  }
+
+  function abrirModalQR() {
+    document.getElementById("qrInterno").value = document.getElementById("interno").value;
+    document.getElementById("qrPatente").value = document.getElementById("patente").value;
+    document.getElementById("qrModelo").value = document.getElementById("modelo").value;
+    document.getElementById("qrModal").style.display = "flex";
+  }
+  function cerrarModalQR() { document.getElementById("qrModal").style.display = "none"; }
+
+  function generarQR() {
+    const baseUrl = window.location.href.split("?")[0];
+    const params = new URLSearchParams();
+    const interno = document.getElementById("qrInterno").value.trim();
+    const patente = document.getElementById("qrPatente").value.trim().toUpperCase();
+    const modelo = document.getElementById("qrModelo").value.trim();
+    if (interno) params.set("interno", interno);
+    if (patente) params.set("patente", patente);
+    if (modelo) params.set("modelo", modelo);
+
+    const fullUrl = baseUrl + "?" + params.toString();
+    const qrContainer = document.getElementById("qrcode");
+    qrContainer.innerHTML = "";
+    new QRCode(qrContainer, { text: fullUrl, width: 200, height: 200 });
+    document.getElementById("qrUrlText").textContent = fullUrl;
+  }
+
+  function limpiarFormulario() {
+    if (!confirm("¿Limpiar todas las marcas y firmas del formulario?")) return;
+    document.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("active-ok", "active-bad"));
+    document.querySelectorAll("input[type='date'], input[type='number'], textarea").forEach(el => el.value = "");
+    document.getElementById("fecha").valueAsDate = new Date();
+    limpiarMarcasCamioneta();
+    limpiarFirma("sig1");
+    limpiarFirma("sig2");
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    renderTabla("tbody-mecanica", ITEMS.mecanica, false);
+    renderTabla("tbody-documentacion", ITEMS.documentacion, true);
+    renderTabla("tbody-seguridad", ITEMS.seguridad, true);
+    renderTabla("tbody-luces", ITEMS.luces, false);
+    renderTabla("tbody-vision", ITEMS.vision, false);
+
+    document.getElementById("fecha").valueAsDate = new Date();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("interno")) document.getElementById("interno").value = params.get("interno");
+    if (params.get("patente")) document.getElementById("patente").value = params.get("patente");
+    if (params.get("modelo")) document.getElementById("modelo").value = params.get("modelo");
+
+    initSignaturePad("sig1");
+    initSignaturePad("sig2");
+
+    const updateStatus = () => {
+      const badge = document.getElementById("netStatus");
+      badge.textContent = navigator.onLine ? "En línea" : "Sin señal (Modo Offline)";
+      badge.style.background = navigator.onLine ? "#15803d" : "#b45309";
+      if (navigator.onLine) sincronizarPendientes();
+    };
+    window.addEventListener("online", updateStatus);
+    window.addEventListener("offline", updateStatus);
+    updateStatus();
+  });
+</script>
+</body>
+</html>
